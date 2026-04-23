@@ -1,5 +1,38 @@
 import re
 
+# Known car brands — used to extract Make from raw page text
+CAR_BRANDS = [
+    "Alfa Romeo", "Aston Martin", "Audi", "Bentley", "BMW", "Bugatti",
+    "Cadillac", "Chevrolet", "Chrysler", "Citroën", "Citroen", "Cupra",
+    "Dacia", "Dodge", "DS", "Ferrari", "Fiat", "Ford", "Genesis",
+    "Honda", "Hyundai", "Infiniti", "Jaguar", "Jeep", "Kia",
+    "Lamborghini", "Land Rover", "Lexus", "Maserati", "Mazda",
+    "Mercedes-Benz", "Mercedes", "Mini", "MINI", "Mitsubishi", "Nissan",
+    "Opel", "Peugeot", "Porsche", "Range Rover", "Renault",
+    "Rolls-Royce", "SEAT", "Seat", "Skoda", "Škoda", "Smart", "Subaru",
+    "Suzuki", "Tesla", "Toyota", "Volkswagen", "Volvo",
+]
+# Longest brands first so "Mercedes-Benz" matches before "Mercedes"
+CAR_BRANDS.sort(key=len, reverse=True)
+BRAND_RE = re.compile(
+    r"\b(" + "|".join(re.escape(b) for b in CAR_BRANDS) + r")\b",
+    re.IGNORECASE,
+)
+
+# neostar.com BodyType URL parameter → human-readable label
+NEOSTAR_BODY_TYPES: dict[str, str] = {
+    "19": "SUV",
+    "1":  "Hatchback",
+    "2":  "Sedan",
+    "3":  "Karavan",
+    "4":  "Kupe",
+    "5":  "Kabriolet",
+    "6":  "Kombi",
+    "7":  "Pickup",
+    "8":  "Minivan",
+    "9":  "Limuzina",
+}
+
 BROWSER_HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "

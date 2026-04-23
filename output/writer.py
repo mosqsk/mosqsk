@@ -9,6 +9,7 @@ from scrapers.base import CarListing
 
 FIELDNAMES = [
     "source_type",
+    "name",
     "make",
     "model",
     "year",
@@ -27,6 +28,7 @@ FIELDNAMES = [
 
 DISPLAY_HEADERS = {
     "source_type": "Source",
+    "name": "Car Name",
     "make": "Make",
     "model": "Model",
     "year": "Year",

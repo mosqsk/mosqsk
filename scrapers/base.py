@@ -11,6 +11,7 @@ from bs4 import BeautifulSoup
 from config import (
     PRICE_RE, YEAR_RE, MILEAGE_RE, KW_RE, HP_RE,
     FUEL_KEYWORDS, TRANSMISSION_KEYWORDS,
+    BRAND_RE, CAR_BRANDS,
     parse_croatian_number,
 )
 
@@ -19,6 +20,7 @@ from config import (
 class CarListing:
     source_url: str = ""
     source_type: str = ""
+    name: str = ""
     make: str = ""
     model: str = ""
     year: str = ""
@@ -89,6 +91,38 @@ def extract_transmission(text: str) -> str:
     return ""
 
 
+def extract_make_model(text: str) -> tuple[str, str, str]:
+    """Return (name, make, model) extracted from a text chunk.
+
+    Scans for a known brand name, then takes the words that follow it
+    as the model. Returns the full matched string as name.
+    """
+    match = BRAND_RE.search(text)
+    if not match:
+        return "", "", ""
+
+    make = match.group(1)
+    # Normalise casing (e.g. "VOLKSWAGEN" → "Volkswagen")
+    for brand in CAR_BRANDS:
+        if brand.lower() == make.lower():
+            make = brand
+            break
+
+    # Grab up to 5 words after the brand as the model
+    after = text[match.end():].strip()
+    model_words = after.split()[:5]
+    # Stop at common non-model tokens
+    stop = {"€", "eur", "kn", "hrk", "km", "god", "automatik", "manual"}
+    trimmed = []
+    for w in model_words:
+        if w.lower() in stop or re.match(r"^\d{4,}$", w):
+            break
+        trimmed.append(w)
+    model = " ".join(trimmed)
+    name = (make + " " + model).strip()
+    return name, make, model
+
+
 def extract_from_jsonld(soup: BeautifulSoup) -> list[dict]:
     results = []
     for tag in soup.find_all("script", type="application/ld+json"):
@@ -115,6 +149,7 @@ def jsonld_to_listing(item: dict, source_url: str) -> CarListing:
     listing = CarListing(source_url=source_url, source_type="web")
     listing.make = item.get("brand", {}).get("name", "") if isinstance(item.get("brand"), dict) else item.get("brand", "")
     listing.model = item.get("model", "")
+    listing.name = item.get("name", f"{listing.make} {listing.model}".strip())
     listing.year = str(item.get("vehicleModelDate", item.get("datePosted", "")))[:4]
     listing.mileage_km = str(item.get("mileageFromOdometer", {}).get("value", "")) if isinstance(item.get("mileageFromOdometer"), dict) else ""
     listing.fuel_type = item.get("fuelType", "")
